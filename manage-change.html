@@ -1,0 +1,124 @@
+<!-- manage-chain.html -->
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Manage Chain</title>
+  <style>
+    body{margin:0;font-family:Arial;background:#f4f6f9;display:flex;}
+    .sidebar{width:220px;background:#fff;padding:20px;border-right:1px solid #ddd;height:100vh;}
+    .sidebar a{display:block;margin:10px 0;color:#007bff;text-decoration:none;}
+    .sidebar a.active{font-weight:bold;}
+    .main{flex:1;padding:20px;}
+    .form-group input,.form-group select{padding:8px;width:200px;margin-right:5px;border-radius:4px;border:1px solid #ccc;}
+    .btn{padding:6px 10px;border:none;border-radius:4px;cursor:pointer;}
+    .btn.add{background:green;color:white;}
+    table{width:100%;border-collapse:collapse;background:white;margin-top:20px;}
+    th,td{text-align:center;padding:10px;border-bottom:1px solid #ddd;}
+    th{background:#f1f1f1;}
+    .filter a{display:inline-block;margin:5px;cursor:pointer;color:#007bff;}
+  </style>
+</head>
+<body>
+
+<div class="sidebar">
+  <h3>Invoice</h3>
+  <a href="index.html">Dashboard</a>
+  <a href="manage-change.html" class="active">Manage Chains</a>
+</div>
+
+<div class="main">
+  <h2>Manage Chains</h2>
+  <div class="form-group">
+    <input id="companyName" placeholder="Company Name">
+    <input id="gstNo" placeholder="GST Number">
+    <select id="groupId"></select>
+    <button class="btn add" onclick="addChain()">Add</button>
+  </div>
+
+  <h4>Filter by Group</h4>
+  <div class="filter" id="groupFilter"></div>
+
+  <table>
+    <thead><tr><th>Sr</th><th>Group</th><th>Company</th><th>GST</th><th>Edit</th><th>Delete</th></tr></thead>
+    <tbody id="chainTable"></tbody>
+  </table>
+</div>
+
+<script>
+const API="http://localhost:5000";
+
+async function loadData(){
+  const groups = await (await fetch(API+"/groups")).json();
+  const chains = await (await fetch(API+"/chains")).json();
+  populateGroups(groups);
+  populateFilter(groups);
+  populateChains(chains);
+}
+
+function populateGroups(groups){
+  const select = document.getElementById("groupId");
+  select.innerHTML = "";
+  groups.forEach(g => select.innerHTML += `<option value="${g.group_id}">${g.group_name}</option>`);
+}
+
+function populateFilter(groups){
+  const filter = document.getElementById("groupFilter");
+  filter.innerHTML = "";
+  groups.forEach(g => filter.innerHTML += `<a onclick="filterByGroup(${g.group_id})">${g.group_name}</a>`);
+}
+
+function populateChains(chains){
+  const table = document.getElementById("chainTable");
+  table.innerHTML = "";
+  if(chains.length===0){ table.innerHTML="<tr><td colspan='6'>No chains found</td></tr>"; return; }
+  chains.forEach((c,i)=>{
+    table.innerHTML += `<tr>
+      <td>${i+1}</td>
+      <td>${c.group_name}</td>
+      <td>${c.company_name}</td>
+      <td>${c.gstn_no}</td>
+      <td><button class="btn edit" onclick="editChain(${c.chain_id})">Edit</button></td>
+      <td><button class="btn delete" onclick="deleteChain(${c.chain_id})">Delete</button></td>
+    </tr>`;
+  });
+}
+
+async function addChain(){
+  const company_name = document.getElementById("companyName").value.trim();
+  const gstn_no = document.getElementById("gstNo").value.trim();
+  const group_id = document.getElementById("groupId").value;
+  if(!company_name||!gstn_no||!group_id){ alert("All fields required"); return; }
+
+  await fetch(API+"/chains",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({company_name,gstn_no,group_id})});
+  document.getElementById("companyName").value="";
+  document.getElementById("gstNo").value="";
+  loadData();
+}
+
+async function editChain(id){
+  const chain = await (await fetch(API+"/chains")).json().then(arr=>arr.find(c=>c.chain_id==id));
+  const company_name = prompt("Company Name:", chain.company_name);
+  const gstn_no = prompt("GST Number:", chain.gstn_no);
+  const group_id = parseInt(prompt("Group ID:", chain.group_id));
+  if(!company_name||!gstn_no||!group_id) return;
+  await fetch(API+"/chains/"+id,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({company_name,gstn_no,group_id})});
+  loadData();
+}
+
+async function deleteChain(id){
+  if(!confirm("Delete this chain?")) return;
+  await fetch(API+"/chains/"+id+"/delete",{method:"PATCH"});
+  loadData();
+}
+
+async function filterByGroup(group_id){
+  const chains = await (await fetch(API+"/chains")).json();
+  const filtered = chains.filter(c => c.group_id===parseInt(group_id));
+  populateChains(filtered);
+}
+
+loadData();
+</script>
+
+</body>
+</html>

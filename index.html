@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Invoice Dashboard</title>
+
+  <style>
+    body{
+      margin:0;
+      font-family:Arial;
+      background:#f5f5f5;
+    }
+
+    /* ================= SIDEBAR ================= */
+    .sidebar{
+      width:220px;
+      background: linear-gradient(180deg, #1e40af, #0f172a);
+      color:white;
+      position:fixed;
+      height:100%;
+      padding:20px;
+      box-shadow: 2px 0 10px rgba(0,0,0,0.2);
+    }
+
+    .sidebar h2{
+      font-size:18px;
+      text-align:center;
+      margin-bottom:20px;
+    }
+
+    .sidebar a{
+      display:block;
+      color:white;
+      text-decoration:none;
+      padding:10px;
+      margin:6px 0;
+      border-radius:8px;
+      transition:0.3s;
+      font-size:14px;
+    }
+
+    .sidebar a:hover{
+      background:rgba(255,255,255,0.15);
+      transform: translateX(5px);
+    }
+
+    .sidebar a.active{
+      background:#3b82f6;
+      font-weight:bold;
+    }
+
+    .menu-title{
+      margin-top:15px;
+      font-size:12px;
+      opacity:0.7;
+      padding-left:5px;
+    }
+
+    /* ================= MAIN ================= */
+    .main{
+      margin-left:240px;
+      padding:20px;
+    }
+
+    /* ================= CARDS ================= */
+    .cards{
+      display:flex;
+      gap:15px;
+      margin-bottom:20px;
+    }
+
+    .card{
+      flex:1;
+      padding:20px;
+      border-radius:10px;
+      color:white;
+      text-align:center;
+      box-shadow:0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    .red{background:#ef4444;}
+    .yellow{background:#facc15;color:black;}
+    .green{background:#22c55e;}
+    .blue{background:#3b82f6;}
+    .purple{background:#a855f7;}
+
+    /* ================= FORM ================= */
+    .form{
+      margin-bottom:20px;
+    }
+
+    input,select{
+      padding:8px;
+      margin-right:8px;
+      border-radius:5px;
+      border:1px solid #ccc;
+    }
+
+    button{
+      padding:8px 12px;
+      border:none;
+      border-radius:5px;
+      cursor:pointer;
+      background:#2563eb;
+      color:white;
+    }
+
+    button:hover{
+      background:#1d4ed8;
+    }
+
+    /* ================= TABLE ================= */
+    table{
+      width:100%;
+      border-collapse:collapse;
+      background:white;
+      border-radius:10px;
+      overflow:hidden;
+    }
+
+    th,td{
+      padding:10px;
+      border-bottom:1px solid #ddd;
+      text-align:left;
+    }
+
+    th{
+      background:#f1f5f9;
+    }
+
+  </style>
+</head>
+
+<body>
+
+<!-- ================= SIDEBAR ================= -->
+<div class="sidebar">
+  <h2>📊 Invoice System</h2>
+
+  <a class="active">🏠 Dashboard</a>
+
+  
+  <a href="add-group.html">Manage Groups</a>
+  <a href="manage-change.html">Chains</a>
+  <a href="manage-brands.html">Manage Brands</a>
+  <a href="manage-subzones.html">Manage Subzones</a>
+  <a href="manage-estimates.html"> Manage Estimates</a>
+  <a href="manage-invoices.html">Manage Invoices</a>
+
+  
+</div>
+
+<!-- ================= MAIN ================= -->
+<div class="main">
+
+  <h2>Dashboard</h2>
+
+  <!-- ================= CARDS ================= -->
+  <div class="cards">
+    <div class="card red">Groups <h2 id="totalGroups">0</h2></div>
+    <div class="card yellow">Chains <h2 id="totalChains">0</h2></div>
+    <div class="card green">Brands <h2 id="totalBrands">0</h2></div>
+    <div class="card blue">Zones <h2 id="totalZones">0</h2></div>
+    <div class="card purple">Estimates <h2 id="totalEstimates">0</h2></div>
+  </div>
+
+  <!-- ================= ADD BRAND ================= -->
+  <div class="form">
+    <select id="chainSelect"></select>
+    <input type="text" id="brandName" placeholder="Brand Name">
+    <button onclick="addBrand()">Add Brand</button>
+  </div>
+
+  <!-- ================= TABLE ================= -->
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Group</th>
+        <th>Company</th>
+        <th>GST</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="table"></tbody>
+  </table>
+
+</div>
+
+<script>
+
+const API = "http://localhost:5000";
+
+let chains = [];
+
+// ================= LOAD DATA =================
+async function loadData(){
+  try{
+
+    const [
+      groups,
+      chainsList,
+      brands,
+      zones,
+      estimates
+    ] = await Promise.all([
+      fetch(API+"/counts/groups").then(r=>r.json()),
+      fetch(API+"/chains").then(r=>r.json()),
+      fetch(API+"/counts/brands").then(r=>r.json()),
+      fetch(API+"/counts/zones").then(r=>r.json()),
+      fetch(API+"/counts/estimates").then(r=>r.json())
+    ]);
+
+    document.getElementById("totalGroups").innerText = groups.total;
+    document.getElementById("totalChains").innerText = chainsList.length;
+    document.getElementById("totalBrands").innerText = brands.total;
+    document.getElementById("totalZones").innerText = zones.total;
+    document.getElementById("totalEstimates").innerText = estimates.total;
+
+    chains = chainsList;
+
+    renderTable();
+    fillDropdown();
+
+  } catch(err){
+    console.log(err);
+    alert("Server not running or backend error");
+  }
+}
+
+// ================= TABLE =================
+function renderTable(){
+  let t = document.getElementById("table");
+  t.innerHTML = "";
+
+  chains.forEach((c,i)=>{
+    t.innerHTML += `
+      <tr>
+        <td>${i+1}</td>
+        <td>${c.group_name}</td>
+        <td>${c.company_name}</td>
+        <td>${c.gstn_no}</td>
+        <td>
+          <button onclick="editChain(${c.chain_id})">Edit</button>
+          <button onclick="deleteChain(${c.chain_id})">Delete</button>
+        </td>
+      </tr>
+    `;
+  });
+}
+
+// ================= DROPDOWN =================
+function fillDropdown(){
+  let sel = document.getElementById("chainSelect");
+  sel.innerHTML = "";
+
+  chains.forEach(c=>{
+    sel.innerHTML += `<option value="${c.chain_id}">${c.company_name}</option>`;
+  });
+}
+
+// ================= ADD BRAND =================
+async function addBrand(){
+  await fetch(API+"/brands",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({
+      brand_name: document.getElementById("brandName").value,
+      chain_id: document.getElementById("chainSelect").value
+    })
+  });
+
+  loadData();
+}
+
+// ================= EDIT =================
+async function editChain(id){
+  let c = chains.find(x=>x.chain_id==id);
+
+  let name = prompt("Company Name", c.company_name);
+  let gst = prompt("GST Number", c.gstn_no);
+
+  await fetch(API+"/chains/"+id,{
+    method:"PUT",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({
+      company_name:name,
+      gstn_no:gst,
+      group_id:c.group_id
+    })
+  });
+
+  loadData();
+}
+
+// ================= DELETE =================
+async function deleteChain(id){
+  await fetch(API+"/chains/"+id+"/delete",{method:"PATCH"});
+  loadData();
+}
+
+loadData();
+
+</script>
+
+</body>
+</html>

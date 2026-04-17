@@ -1,0 +1,81 @@
+body {
+  margin: 0;
+  font-family: Arial;
+  display: flex;
+  background: #f5f6fa;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 220px;
+  background: #fff;
+  padding: 20px;
+  border-right: 1px solid #ddd;
+  height: 100vh;
+}
+
+.sidebar a {
+  display: block;
+  margin: 10px 0;
+  color: #007bff;
+  text-decoration: none;
+}
+
+/* Main */
+.main {
+  flex: 1;
+  padding: 20px;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  background: #e9ecef;
+  padding: 10px;
+}
+
+/* Cards */
+.cards {
+  display: flex;
+  gap: 15px;
+  margin: 20px 0;
+}
+
+.card {
+  padding: 20px;
+  border-radius: 8px;
+  color: white;
+  width: 180px;
+}
+
+.red { background: #dc3545; }
+.yellow { background: #ffc107; color: black; }
+
+/* Table */
+table {
+  width: 100%;
+  background: white;
+  border-collapse: collapse;
+}
+
+th, td {
+  padding: 10px;
+  text-align: center;
+  border-bottom: 1px solid #ddd;
+}
+
+/* Buttons */
+.btn {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+}
+
+.add { background: green; color: white; }
+.edit { background: orange; color: white; }
+.delete { background: red; color: white; }
+
+/* Filter */
+.filter {
+  margin-left: 20px;
+}
